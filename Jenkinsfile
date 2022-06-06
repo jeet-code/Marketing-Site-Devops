@@ -13,42 +13,31 @@ pipeline {
         stage('build image')
         {
           steps{
-              sh ""
+              sh "docker build  -t marksite:v1 ."
              }
         }
         
-        stage('send error mail')
+        stage('remove last container')
         {
-            when {
-             expression { IS_ERROR == 0}
-            }
+          steps{
+              sh "docker rm -f demo"
+             }
+        }
+
+        stage('start the container')
+        {
             steps
             {
-                sh "python3 cf-test/sendMail.py error-found"
+                sh "docker run -dit -p 80:80 --name demo  marksite:v1"
             }
         }
         
-        stage('send test pass mail')
+       
+        stage('send mail to dev')
         {
-            when {
-             expression { IS_ERROR != 0 }
-            }
             steps
             {
-                sh "bash /var/lib/jenkins/workspace/cf-check-teat/cf-test-1/getDet.sh"
-                sh "python3 cf-test/sendMail.py no-error-found"
-            }
-        }
-        
-        stage('push to master')
-        {
-            when {
-             expression { IS_ERROR != 0 }
-            }
-            steps
-            {
-                sh "bash /var/lib/jenkins/workspace/cf-check-teat/cf-test-1/getAllStacks.sh"
-                echo "push to master"
+                sh "python3 sendMail.py no-error-found"
             }
         }
     }
